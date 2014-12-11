@@ -1,0 +1,11 @@
+{
+  "name": "digitalocean-callback",
+  "description": "DigitalOcean authorization helper",
+  "logo": "https://halcyon.sh/logo.svg",
+  "repository": "https://github.com/mietek/digitalocean-callback",
+  "env": {
+    "BUILDPACK_URL": "https://github.com/mietek/haskell-on-heroku",
+    "DIGITALOCEAN_CLIENT_ID": "",
+    "DIGITALOCEAN_CLIENT_SECRET": ""
+  }
+}
