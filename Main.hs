@@ -61,7 +61,7 @@ data Cfg = Cfg
   deriving (Show)
 
 
-postAccessTokenReq :: (Given Cfg) => Text -> IO (Maybe Text)
+postAccessTokenReq :: (Given Cfg) => Text -> IO (Maybe Text, Maybe Text, Maybe Text)
 postAccessTokenReq code = do
     let opts = C.defaults
           & C.param "client_id"     .~ [clientId given]
@@ -69,27 +69,30 @@ postAccessTokenReq code = do
           & C.param "redirect_uri"  .~ [callbackUrl given]
           & C.param "grant_type"    .~ ["authorization_code"]
           & C.param "code"          .~ [code]
-    res <- C.postWith opts "https://cloud.digitalocean.com/v1/oauth/token" BS.empty
-    return $ res ^? C.responseBody . key "access_token" . _String
+    resp <- C.postWith opts "https://cloud.digitalocean.com/v1/oauth/token" BS.empty
+    let maccess  = resp ^? C.responseBody . key "access_token"  . _String
+        mexpires = resp ^? C.responseBody . key "expires_in"    . _String
+        mrefresh = resp ^? C.responseBody . key "refresh_token" . _String
+    return (maccess, mexpires, mrefresh)
 
 
 handleCallback :: (Given Cfg) => S.ActionM ()
 handleCallback = do
-    statep <- maybeParam "state"
-    codep  <- maybeParam "code"
-    let go more = do
-          let base = case statep of
-                Nothing    -> []
-                Just state -> [("state" :: Text, state)]
-              query = base ++ more
-          redirect $ addQuery query $ targetUrl given
-    case codep of
-      Nothing   -> go [("error", "no_code")]
+    mstate <- maybeParam "state"
+    mcode  <- maybeParam "code"
+    let base    = [("state" :: Text, ) <$> mstate]
+        go more = redirect $ addQuery (base ++ more) $ targetUrl given
+    case mcode of
+      Nothing   -> go [Just ("error", "no_code")]
       Just code -> do
-        mtoken <- liftIO $ postAccessTokenReq code
-        case mtoken of
-          Nothing    -> go [("error", "no_token")]
-          Just token -> go [("token", token)]
+        (maccess, mexpires, mrefresh) <- liftIO $ postAccessTokenReq code
+        case maccess of
+          Nothing    -> go [Just ("error", "no_token")]
+          Just token -> go
+            [ Just ("access_token", token)
+            , ("expires_in", )    <$> mexpires
+            , ("refresh_token", ) <$> mrefresh
+            ]
 
 
 main :: IO ()
