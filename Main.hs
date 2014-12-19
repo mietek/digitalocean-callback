@@ -24,6 +24,11 @@ import qualified Network.Wreq as C
 import qualified Web.Scotty as S
 
 
+redirect :: Text -> S.ActionM ()
+redirect url = do
+    S.redirect $ LT.fromStrict url
+
+
 rejectBadRequest :: S.ActionM ()
 rejectBadRequest = do
     S.html "<h1>400 Bad Request</h1>"
@@ -36,11 +41,12 @@ maybeParam name =
       return Nothing
 
 
-addQuery :: (H.QueryLike a) => Text -> a -> Text
-addQuery url query =
-    T.decodeUtf8 $ BS.concat [T.encodeUtf8 url, sep, str]
+addQuery :: (H.QueryLike a) => a -> Text -> Text
+addQuery query url
+    | BS.length str > 0 = T.decodeUtf8 $ BS.concat [T.encodeUtf8 url, sep, str]
+    | otherwise         = url
   where
-    str = H.renderQuery False (H.toQuery query)
+    str = H.renderQuery False $ H.toQuery query
     sep = case T.findIndex (== '?') url of
             Just _  -> "&"
             Nothing -> "?"
@@ -69,17 +75,21 @@ postAccessTokenReq code = do
 
 handleCallback :: (Given Cfg) => S.ActionM ()
 handleCallback = do
-    state <- maybeParam "state"
-    code  <- maybeParam "code"
-    err   <- maybeParam "error"
-    token <- case code of
-               Just val -> liftIO $ postAccessTokenReq val
-               Nothing  -> return Nothing
-    S.redirect $ LT.fromStrict $ addQuery (targetUrl given)
-      [ ("state" :: Text, ) <$> state
-      , ("access_token", )  <$> token
-      , ("error", )         <$> err
-      ]
+    statep <- maybeParam "state"
+    codep  <- maybeParam "code"
+    let go more = do
+          let base = case statep of
+                Nothing    -> []
+                Just state -> [("state" :: Text, state)]
+              query = base ++ more
+          redirect $ addQuery query $ targetUrl given
+    case codep of
+      Nothing   -> go [("error", "no_code")]
+      Just code -> do
+        mtoken <- liftIO $ postAccessTokenReq code
+        case mtoken of
+          Nothing    -> go [("error", "no_token")]
+          Just token -> go [("token", token)]
 
 
 main :: IO ()
