@@ -9,12 +9,11 @@ Usage
 
 Listens for HTTP `GET` requests at `/callback`.  All requests are forwarded to the DigitalOcean [`/v1/oauth/token`](https://developers.digitalocean.com/oauth/#request-access-token) endpoint.
 
-After receiving a response, the user is redirected to the target URL, with additional `access_token` and `state` query parameters.
+If an incoming request includes an authorization code, the helper requests an access token.  If an access token is granted, the helper redirects the user to the target URL, with an additional `token` query parameter.
 
-| Query parameter   | Description
-| :---------------- | :----------
-| `access_token`    | Requested access token.  Empty on failure.
-| `state`           | Parameter included in authorization code request.
+On failure, the user is also redirected to the target URL, with an `error` parameter, specifying either `no_code` or `no_token`.
+
+The `state` parameter is always included, if it was included in the original authorization code request.
 
 
 ### Configuration
@@ -25,8 +24,8 @@ Authentication credentials and defaults can be configured by setting environment
 | :--------------------------- | :----------
 | `DIGITALOCEAN_CLIENT_ID`     | Application identifier.  Required.
 | `DIGITALOCEAN_CLIENT_SECRET` | Authentication token.  Required.
-| `CALLBACK_URL`               | Helper URL, including `/callback`.  Required.
-| `TARGET_URL`                 | URL where the user is next sent.  Required.
+| `CALLBACK_URL`               | Helper’s own URL, including `/callback`.  Required.
+| `TARGET_URL`                 | URL to which the user is redirected.  Required.
 | `PORT`                       | HTTP listening port.  Defaults to `8080`.
 
 
