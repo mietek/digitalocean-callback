@@ -9,7 +9,7 @@ Usage
 
 Listens for HTTP `GET` requests at `/callback`.  All requests are forwarded to the DigitalOcean [`/v1/oauth/token`](https://developers.digitalocean.com/oauth/#request-access-token) endpoint.
 
-If an incoming request includes an authorization code, the helper requests an access token.  If an access token is granted, the helper redirects the user to the target URL, with additional `access_token`,  `expires_in`, and `refresh_token` parameters.
+If an incoming request includes an authorization code, the helper requests an access token.  If an access token is granted, the helper redirects the user to the target URL, with additional `access_token` and `scope` parameters.
 
 On failure, the user is also redirected to the target URL, with an `error` parameter.
 
@@ -18,8 +18,7 @@ The `state` parameter is included both on success and on failure, if it was supp
 | Query parameter | Description
 | :-------------- | :----------
 | `access_token`  | Access token.  Included on success.
-| `expires_in`    | Access token expiry time.  May be included on success.
-| `refresh_token` | Refresh token.  May be included on success.
+| `scope`         | Space-separated list of scopes.  Included on success.
 | `error`         | Either `no_code` or `no_token`.  Included on failure.
 | `state`         | Arbitrary string.  Optional.
 
