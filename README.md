@@ -30,6 +30,8 @@ To help distinguish requests made to the target URL, `vendor=digitalocean` is al
 
 Authentication credentials and defaults can be configured by setting environment variables.
 
+TLS is used if `server.key` and `server.crt` are found in the [run-time data files directory](https://www.haskell.org/cabal/users-guide/developing-packages.html#accessing-data-files-from-package-code).
+
 | Environment variable         | Description
 | :--------------------------- | :----------
 | `DIGITALOCEAN_CLIENT_ID`     | Application identifier.  Required.
